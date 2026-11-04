@@ -1,0 +1,20 @@
+.build/
+dist/
+Inputs/
+artifacts/
+Tests/Fixtures/
+.DS_Store
+__pycache__/
+*.py[cod]
+.env
+.env.*
+*.pem
+*.p12
+*.mobileprovision
+# Local agent navigation tooling has separate provenance; it is not app source.
+/.codex/
+/.githooks/
+/AGENTS.md
+/FILEMAP.md
+/.filemapignore
+/tools/
