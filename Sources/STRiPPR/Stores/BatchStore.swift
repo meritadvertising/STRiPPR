@@ -280,8 +280,10 @@ final class BatchStore {
         overallProgress = 0
         let destination = replaceOriginal ? nil : outputDirectory
         job = Task { [self] in
-            var completed = 0
+            var completedCopies = 0
+            var completedReplacements = 0
             var failures = 0
+            var completedWithWarnings = 0
             for (index, item) in pending.enumerated() {
                 if cancellation.isCancelledForUI { break }
                 guard let scan = item.scan, let row = items.firstIndex(where: { $0.id == item.id }) else { continue }
@@ -309,7 +311,8 @@ final class BatchStore {
                 guard let current = items.firstIndex(where: { $0.id == item.id }) else { continue }
                 switch result {
                 case .success(let result):
-                    completed += 1
+                    if result.didReplaceOriginal { completedReplacements += 1 } else { completedCopies += 1 }
+                    if !result.warnings.isEmpty || result.recoveryURL != nil { completedWithWarnings += 1 }
                     items[current].phase = .verified
                     items[current].progress = 1
                     items[current].output = result.outputURL
@@ -328,9 +331,14 @@ final class BatchStore {
             }
             let wasCancelled = isCancelling
             finish()
-            let outcome = replaceOriginal ? "verified \(completed == 1 ? "replacement" : "replacements")" : "verified \(completed == 1 ? "copy" : "copies") · originals preserved"
+            var outcomes: [String] = []
+            if completedReplacements > 0 { outcomes.append("\(completedReplacements) verified \(completedReplacements == 1 ? "replacement" : "replacements")") }
+            if completedCopies > 0 { outcomes.append("\(completedCopies) verified \(completedCopies == 1 ? "copy" : "copies") · originals preserved") }
+            if outcomes.isEmpty { outcomes.append("0 verified files") }
+            let outcome = outcomes.joined(separator: " · ")
             let errors = failures > 0 ? " · \(failures) failed" : ""
-            activity = wasCancelled ? "Cancelled · completed results are kept · remaining files stay queued" : "Batch finished · \(completed) \(outcome)\(errors)"
+            let notices = completedWithWarnings > 0 ? " · \(completedWithWarnings) with warnings" : ""
+            activity = wasCancelled ? "Cancelled · completed results are kept · remaining files stay queued\(notices)" : "Batch finished · \(outcome)\(errors)\(notices)"
         }
     }
 

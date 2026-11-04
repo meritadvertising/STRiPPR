@@ -19,7 +19,9 @@ BUILD_DIR="$(swift build -c release --disable-sandbox --cache-path .build/swiftp
   printf '%s\n' 'This release script requires an Apple-silicon build host.' >&2; exit 1;
 }
 VERSION="$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' Resources/Info.plist)"
-PACKAGE_NAME="STRiPPR-${VERSION}.0-macOS-arm64"
+RELEASE_VERSION="$VERSION"
+if [[ "$VERSION" =~ ^[0-9]+\.[0-9]+$ ]]; then RELEASE_VERSION="${VERSION}.0"; fi
+PACKAGE_NAME="STRiPPR-${RELEASE_VERSION}-macOS-arm64"
 STAGING_DIR="$(mktemp -d "$OUT_DIR/.strippr-package-XXXXXXXX")"
 trap 'rm -rf "$STAGING_DIR"' EXIT
 PACKAGE_DIR="$STAGING_DIR/$PACKAGE_NAME"

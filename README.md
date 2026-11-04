@@ -19,11 +19,11 @@ complete metadata/privacy scrubber. See [LICENSE](LICENSE) and [NOTICE.md](NOTIC
 
 The [Releases page](https://github.com/meritadvertising/STRiPPR/releases) contains
 an actual **Apple silicon (arm64) app ZIP**, separately from GitHub's source-code
-archives. Download `STRiPPR-1.3.0-macOS-arm64.zip`, unzip it, and move `STRiPPR.app`
+archives. Download `STRiPPR-1.3.1-macOS-arm64.zip`, unzip it, and move `STRiPPR.app`
 to Applications if desired. `SHA256SUMS.txt` is provided alongside it:
 
 ```sh
-shasum -a 256 STRiPPR-1.3.0-macOS-arm64.zip
+shasum -a 256 STRiPPR-1.3.1-macOS-arm64.zip
 ```
 
 **The app is ad hoc signed, not Developer ID signed or notarized by Apple.**
@@ -56,9 +56,13 @@ There is no Windows/Linux app or Intel binary in this release.
 5. Click **Strip supported tags** (Shift-Command-S). Progress appears above the
    list and on active files. Cancel with the button or Command-period.
 
-Copy names are `name.stripped.ext`, then `name.stripped-1.ext`, and so on.
-Existing outputs are never replaced. Clear empties the queue without deleting
-saved files. Failed/cancelled entries can be rescanned. Both keep switches reset
+On volumes with hard links, copy names are `name.stripped.ext`, then
+`name.stripped-1.ext`, and so on. On volumes without the required atomic file
+operations, a verified cleaned copy is published inside a new uniquely named
+output folder. Existing copy outputs are never overwritten. A requested replacement
+on such a volume also keeps the original and reports that fallback explicitly.
+Clear empties the queue without deleting saved files. Failed/cancelled entries can
+be rescanned. Both keep switches reset
 to their safe defaults on launch.
 
 ## Formats and limits
@@ -91,16 +95,31 @@ length, media offsets, and all bytes outside those ranges. Before publishing,
 STRiPPR compares the entire staged result against the source plus intended edits,
 checks file identity/change times, and rescans under the same encoder policy.
 
-Copies use exclusive atomic publication and require a hard-link-capable
-filesystem (APFS was tested). Replacement stages beside the source, preserves
-permissions/ACLs/attributes, and uses a guarded atomic swap after verification.
-It rejects symlinks, shared hard links, locked/read-only files, and unsupported
-ownership/permissions. Concurrent changes fail safely and may require rescanning.
+On supported local volumes, copies use exclusive hard-link publication and
+replacement uses a guarded atomic swap. If a volume reports those file operations
+as unsupported and permits ordinary directory rename, STRiPPR keeps the original
+and publishes the verified file by renaming its
+nonempty staging directory to a fresh output-folder name. This is a kept-copy
+fallback, not an in-place NAS replacement. It does not use delete-then-rename.
+
+Filesystem metadata is checked before the large copy, reapplied after all data
+writers close, and independently verified before publication. Quarantine, access-control lists,
+ownership, permissions, flags, modification time, and unrelated attributes must
+pass those checks. Only a refused copy of `com.apple.provenance` can be omitted,
+with an explicit warning that system security tracking information was not
+preserved. STRiPPR does not clear source attributes, interpret quarantine flags,
+force denied writes, or change OS security settings. OS-added provenance is kept
+and reported. A result with warnings is marked in amber even with its row closed.
+
+Replacement rejects symlinks, shared hard links, locked/read-only files, and
+unsupported ownership/permissions. Copying also fails if required filesystem
+metadata cannot be preserved or verified. Concurrent changes fail safely and
+may require rescanning.
 
 Cancellation before commit preserves the original; an already committed
 replacement finishes and is reported. Uncertain swap/rollback or cleanup failures
 show any recovery path. Normal failures clean up unfinished staging. Forced
-termination or power loss can leave a hidden `.strippr-*.tmp` file. This is not a
+termination or power loss can leave a hidden `.strippr-UUID` staging folder. This is not a
 crash-durability guarantee. Test on disposable copies and keep your own backups.
 
 ## Build from source
@@ -123,7 +142,7 @@ command line. Replacement requires both `--replace-original` and
 
 ## Tests and release packaging
 
-The 71 XCTest cases use synthetic fixtures, including 500-file filter/sort and
+The XCTest safety suite uses synthetic fixtures, including 500-file filter/sort and
 responsiveness tests; they do not require private media or FFmpeg:
 
 ```sh

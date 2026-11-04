@@ -17,7 +17,7 @@ public enum StripprError: Error, LocalizedError, Sendable {
         case .sourceChanged: return "The original changed since scanning. Rescan it before cleaning."
         case .verification(let reason): return "Verification failed: \(reason). No file was published or replaced."
         case .io(let reason): return reason
-        case .replacementUncertain(let path, let detail): return "Replacement outcome needs attention: \(detail). Recovery file retained at \(path). Keep that file until the result is checked."
+        case .replacementUncertain(let path, let detail): return "File operation needs attention: \(detail). Recovery location: \(path). Keep any recovery data until the result is checked."
         }
     }
 }

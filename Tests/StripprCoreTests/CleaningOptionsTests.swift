@@ -317,8 +317,7 @@ private final class OneTimeStageTampering: @unchecked Sendable {
         lock.lock(); defer { lock.unlock() }
         guard !didTamper else { return }
         do {
-            guard let stage = try FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)
-                .first(where: { $0.lastPathComponent.hasPrefix(".strippr-") && $0.pathExtension == "tmp" }) else { return }
+            guard let stage = try stagedMediaForTests(in: directory) else { return }
             let writer = try FileHandle(forWritingTo: stage)
             try writer.seekToEnd(); try writer.write(contentsOf: Data([0])); try writer.close()
             didTamper = true
@@ -336,12 +335,30 @@ private final class OneTimeStagePayloadMutation: @unchecked Sendable {
         lock.lock(); defer { lock.unlock() }
         guard !didTamper else { return }
         do {
-            guard let stage = try FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)
-                .first(where: { $0.lastPathComponent.hasPrefix(".strippr-") && $0.pathExtension == "tmp" }) else { return }
+            guard let stage = try stagedMediaForTests(in: directory) else { return }
             let writer = try FileHandle(forWritingTo: stage)
             try writer.seek(toOffset: offset)
             try writer.write(contentsOf: Data([0xfe])); try writer.close()
             didTamper = true
         } catch {}
     }
+}
+
+/// Locate the real staged payload in a disposable test directory. Support both
+/// earlier flat stages and owned staging directories; never follow symlinks.
+func stagedMediaForTests(in directory: URL) throws -> URL? {
+    let keys: Set<URLResourceKey> = [.isDirectoryKey, .isRegularFileKey, .isSymbolicLinkKey]
+    for candidate in try FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: Array(keys))
+        where candidate.lastPathComponent.hasPrefix(".strippr-") {
+        let values = try candidate.resourceValues(forKeys: keys)
+        guard values.isSymbolicLink != true else { continue }
+        if values.isRegularFile == true && candidate.pathExtension == "tmp" { return candidate }
+        if values.isDirectory == true {
+            for payload in try FileManager.default.contentsOfDirectory(at: candidate, includingPropertiesForKeys: Array(keys)) {
+                let attributes = try payload.resourceValues(forKeys: keys)
+                if attributes.isRegularFile == true && attributes.isSymbolicLink != true { return payload }
+            }
+        }
+    }
+    return nil
 }

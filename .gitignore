@@ -18,3 +18,15 @@ __pycache__/
 /FILEMAP.md
 /.filemapignore
 /tools/
+# Local operational NAS probes are not part of the distributed app or test suite.
+/script/nas_copyfile_probe.c
+/script/probe_nas_capabilities.py
+/script/probe_nas_directory_creation.py
+/script/probe_nas_metadata.py
+/script/probe_nas_opaque_attributes.py
+/script/stage_nas_validation.py
+/script/verify_nas_live.py
+/script/nas_finalize_metadata_probe.c
+/script/probe_nas_metadata_finalization.py
+/script/probe_nas_rename_attributes.py
+/script/plan_nas_qa_cleanup.py

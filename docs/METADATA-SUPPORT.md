@@ -34,3 +34,31 @@ MPEG and Matroska/WebM remain read only. Their embedded metadata is not inventor
 - [ExifTool QuickTime implementation](https://github.com/exiftool/exiftool/blob/master/lib/Image/ExifTool/QuickTime.pm): descriptive credit/freeform/location mappings and encoder/normalization distinctions.
 
 Tests cover numeric rendering, removal in legitimate metadata containers, identical preserved bytes, decoy field names inside media/nonmetadata structures, unknown/ambiguous freeform preservation, and encoder/playback/artwork retention. Independent real-media verification compares streams, packet payloads, decoded output, and playback properties.
+
+## Filesystem metadata and NAS output
+
+The video allowlist is separate from filesystem attributes. Required filesystem
+metadata is inventoried and verified independently of the media payload.
+Quarantine, MACL when present, ACLs (including ACL flags), permissions, ownership,
+file flags, modification time, and unrelated extended attributes must be
+preserved. Opaque attribute values are copied unchanged through public APIs;
+quarantine flags are never interpreted or weakened. Denials remain fatal except
+for an explicitly refused `com.apple.provenance` copy, which produces a visible
+security-tracking warning. This exception is not a claim of equivalent security
+history or of complete filesystem metadata preservation. OS-created provenance
+is not removed.
+
+Some NAS mounts do not support hard links, exclusive file rename, or atomic
+swap. When the required file operation reports unsupported and ordinary directory
+rename is available, STRiPPR retains the original and publishes a verified
+cleaned copy inside a new output folder. Permission and I/O errors do not trigger
+this fallback. File,
+symlink, and nonempty-directory collisions cannot be overwritten by that
+operation. Unique names and prechecks avoid existing empty directories; this is
+not a compare-and-swap guarantee against uncooperative namespace writers.
+There is no in-place or delete-original-then-rename fallback.
+
+Apple's [SMB rename implementation](https://github.com/apple-oss-distributions/smb/blob/main/kernel/smbfs/smbfs_vnops.c)
+documents that servers without file IDs can change the reported directory inode
+after rename. STRiPPR keeps an open directory anchor and checks the published
+path, child identity, complete payload, and required attributes independently.

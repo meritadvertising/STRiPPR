@@ -4,6 +4,7 @@ enum Theme {
     static let cyan = Color(red: 0.12, green: 0.91, blue: 0.96)
     static let pink = Color(red: 1, green: 0.23, blue: 0.65)
     static let green = Color(red: 0.38, green: 0.93, blue: 0.65)
+    static let amber = Color(red: 1, green: 0.72, blue: 0.24)
     static let background = Color(red: 0.045, green: 0.052, blue: 0.075)
     static let surface = Color(red: 0.075, green: 0.084, blue: 0.11)
     static let border = Color.white.opacity(0.11)

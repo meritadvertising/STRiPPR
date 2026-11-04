@@ -5,7 +5,7 @@ APP_NAME="STRiPPR"
 BUNDLE_ID="com.laz.strippr"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
-APP_BUNDLE="$ROOT_DIR/dist/$APP_NAME.app"
+APP_BUNDLE="${STRIPPR_APP_BUNDLE:-$ROOT_DIR/dist/$APP_NAME.app}"
 APP_CONTENTS="$APP_BUNDLE/Contents"
 APP_BINARY="$APP_CONTENTS/MacOS/$APP_NAME"
 

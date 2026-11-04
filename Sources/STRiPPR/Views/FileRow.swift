@@ -8,7 +8,7 @@ struct FileRow: View {
 
     private var color: Color {
         switch item.phase {
-        case .verified: return Theme.green
+        case .verified: return item.outcomeWarnings.isEmpty ? Theme.green : Theme.amber
         case .failed, .readOnly: return Theme.pink
         case .cancelled, .inspected: return .secondary
         default: return Theme.cyan
@@ -30,7 +30,7 @@ struct FileRow: View {
                 Spacer(minLength: 12)
                 VStack(alignment: .trailing, spacing: 5) {
                     HStack(spacing: 5) {
-                        if item.phase == .verified { Image(systemName: "checkmark.circle.fill") }
+                        if item.phase == .verified { Image(systemName: item.outcomeWarnings.isEmpty ? "checkmark.circle.fill" : "exclamationmark.triangle.fill") }
                         Text(item.phase == .verified && item.didReplaceOriginal ? "Verified replacement" : item.phase.rawValue)
                         if item.phase == .cleaning { Text("\(Int(item.progress * 100))%") }
                     }.font(.system(size: 11, weight: .semibold)).foregroundStyle(color)
@@ -42,6 +42,17 @@ struct FileRow: View {
                     .accessibilityLabel(item.expanded ? "Hide metadata for \(item.url.lastPathComponent)" : "Show metadata for \(item.url.lastPathComponent)")
             }
             .padding(.horizontal, 18).padding(.vertical, 15)
+            if !item.outcomeWarnings.isEmpty {
+                VStack(alignment: .leading, spacing: 6) {
+                    ForEach(Array(item.outcomeWarnings.enumerated()), id: \.offset) { _, warning in
+                        Label(warning, systemImage: "exclamationmark.triangle")
+                            .font(.system(size: 11)).foregroundStyle(Theme.amber)
+                            .fixedSize(horizontal: false, vertical: true).textSelection(.enabled)
+                    }
+                }
+                .padding(.horizontal, 18).padding(.bottom, 12)
+                .accessibilityLabel("Saved with warnings")
+            }
             if item.phase == .cleaning || item.phase == .verified || item.phase == .cancelled {
                 ThinProgress(value: item.progress, color: color, height: 2).padding(.horizontal, 18).padding(.bottom, 10)
                     .accessibilityLabel("File progress")
@@ -86,9 +97,6 @@ struct FileRow: View {
                     Spacer()
                     Button("Show in Finder") { NSWorkspace.shared.activateFileViewerSelecting([output]) }.buttonStyle(.borderless)
                 }
-            }
-            ForEach(Array(item.outcomeWarnings.enumerated()), id: \.offset) { _, warning in
-                Label(warning, systemImage: "exclamationmark.triangle").font(.system(size: 11)).foregroundStyle(Theme.pink).textSelection(.enabled)
             }
             if item.phase == .failed || item.phase == .cancelled {
                 Text(item.detail).font(.system(size: 11)).foregroundStyle(Theme.pink).textSelection(.enabled)
